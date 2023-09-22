@@ -1,0 +1,47 @@
+#pragma once
+#include <stdp>
+
+inline void printProgBar(ui64 max, ui64 cur, ui64 x, ui64 y, ui64 len)
+{
+	if(len == 0)
+	{
+		len = 100;
+	}
+	
+	HANDLE oh = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD attr_wr;
+	COORD pos;
+	pos.X = (SHORT)x;
+	pos.Y = (SHORT)y;
+	// BLUE       0x90 --> BACKGROUND_INTENSITY | BACKGROUND_BLUE
+	// DARKBLUE   0x10 --> BACKGROUND_BLUE
+	// DARKGRAY   0x80 --> BACKGROUND_INTENSITY
+	WORD blue = 0x10, dgray = 0x80;
+	
+	ui64 full = (ui64)((float)cur/(float)max * (float)len);
+	ui64 empty = len - full;
+	
+	COORD empty_pos = pos;
+	empty_pos.X += (SHORT)full;
+	
+	FillConsoleOutputAttribute(oh, blue, (DWORD)full, pos, &attr_wr);
+	FillConsoleOutputAttribute(oh, dgray, (DWORD)empty, empty_pos, &attr_wr);
+	
+	txt prog = i2t(cur) + '/' + i2t(max);
+	COORD prog_pos = pos;
+	prog_pos.X += (WORD)len + 1;
+	
+	for(ui64 i = 0; i < ~prog; ++i)
+	{
+		FillConsoleOutputCharacter(oh, prog[i], 1, prog_pos, &attr_wr);
+		++prog_pos.X;
+	}
+}
+
+inline void printProgBarMod(ui64 mod, ui64 max, ui64 cur, ui64 x, ui64 y, ui64 len)
+{
+	if(cur % mod == 0)
+	{
+		printProgBar(max, cur, x, y, len);
+	}
+}

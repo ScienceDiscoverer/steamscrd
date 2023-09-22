@@ -1,0 +1,219 @@
+#pragma once
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <utf>
+
+#ifdef DEBUG
+#pragma comment( lib, "stdrd" )
+#else
+#pragma comment( lib, "stdr" )
+#endif
+
+#define STD_READER
+
+#define STDR_INPUT_BUFF_SZ 512
+
+class StdReader
+{
+public:
+	StdReader();
+	~StdReader();
+	
+	StdReader(const StdReader &other) = delete;
+	StdReader(StdReader &&other) = delete;
+	StdReader operator=(const StdReader &other) = delete;
+	StdReader operator=(StdReader &&other) = delete;
+	
+	StdReader & operator>(ui64 &ui);
+	StdReader & operator>(ui32 &ui);
+	StdReader & operator>(uli32 &ui);
+	StdReader & operator>(ui16 &ui);
+	StdReader & operator>(i64 &i);
+	StdReader & operator>(i32 &i);
+	StdReader & operator>(li32 &i);
+	StdReader & operator>(i16 &i);
+	StdReader & operator>(wchar_t &wc);
+	StdReader & operator>(char &c);
+	StdReader & operator>(bool &b);
+	/* TODO
+	StdReader &operator>(float f);
+	StdReader &operator>(double d);
+	StdReader &operator>(long double d);
+	*/
+	StdReader & operator>(txt &t);
+	StdReader & operator>(wtxt &wt);
+	
+	StdReader & operator>(StdReader &(*func)(StdReader &stdr));
+	StdReader & operator>(StdReader &stdr);
+	
+private:
+	void ReadInput();
+	ui64 ReadNum(ui64 max_is);
+	bool NumOverflowed(const txt &num, ui64 max_is);
+	
+private:
+	static HANDLE oh;						// Output Handle
+	static HANDLE ih;						// Input Handle
+	static CONSOLE_SCREEN_BUFFER_INFO csbi;
+	txt ibuff;								// Input buffer
+	txt inp;								// Full input
+};
+
+extern StdReader r;
+
+inline StdReader::StdReader()
+{
+	ibuff = STDR_INPUT_BUFF_SZ;
+	inp = STDR_INPUT_BUFF_SZ;
+}
+
+inline StdReader::~StdReader()
+{
+	// Do nothing...
+}
+
+inline StdReader & StdReader::operator>(ui64 &ui)
+{
+	ui = ReadNum(20); // Max digits 18446744073709551615
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(ui32 &ui)
+{
+	ui = (ui32)ReadNum(10); // Max digits 4294967295
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(uli32 &ui)
+{
+	ui = (uli32)ReadNum(10); // Max digits 4294967295
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(ui16 &ui)
+{
+	ui = (ui16)ReadNum(5); // Max digits 65535
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(i64 &i)
+{
+	i = (i64)ReadNum(20); // Max digits -9223372036854775808
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(i32 &i)
+{
+	i = (i32)ReadNum(11); // Max digits -2147483648
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(li32 &i)
+{
+	i = (li32)ReadNum(11); // Max digits -2147483648
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(i16 &i)
+{
+	i = (i16)ReadNum(6); // Max digits -32768
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(wchar_t &wc)
+{
+	ReadInput();
+	wc = t2u16(inp)[0];
+	
+	memset(inp, 0, ~inp);
+	txtssz(inp, 0);
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(char &c)
+{
+	ReadInput();
+	c = inp[0];
+	
+	memset(inp, 0, ~inp);
+	txtssz(inp, 0);
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(bool &b)
+{
+	ReadInput();
+	if(~inp > 1)
+	{
+		if(inp == L("true"))
+		{
+			b = true;
+		}
+		else if(inp == L("false"))
+		{
+			b = false;
+		}
+	}
+	else
+	{
+		if(inp == '1')
+		{
+			b = true;
+		}
+		else if(inp == '0')
+		{
+			b = false;
+		}
+	}
+	
+	memset(inp, 0, ~inp);
+	txtssz(inp, 0);
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(txt &t)
+{
+	ReadInput();
+	t = inp;
+	
+	memset(inp, 0, ~inp);
+	txtssz(inp, 0);
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(wtxt &wt)
+{
+	ReadInput();
+	wt = t2u16(inp);
+	
+	memset(inp, 0, ~inp);
+	txtssz(inp, 0);
+	return *this;
+}
+
+inline StdReader & StdReader::operator>(StdReader &(*func)(StdReader &stdr))
+{
+	return func(*this);
+}
+
+inline StdReader & StdReader::operator>(StdReader &stdr)
+{
+	return stdr;
+}
+
+inline void StdReader::ReadInput()
+{
+	while(ReadFile(ih, ibuff, STDR_INPUT_BUFF_SZ, *ibuff, NULL) && ~ibuff)
+	{
+		inp += ibuff;
+		if(inp[~inp-1] == '\n')
+		{
+			break;
+		}
+	}
+	
+	inp[~inp-2] = 0;
+	inp[~inp-1] = 0;
+	txtssz(inp, ~inp-2);
+}

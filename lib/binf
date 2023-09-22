@@ -1,0 +1,231 @@
+#pragma once
+
+#include <mmanip>
+
+#include "types.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define EXCEPTION_BINF_OUT_OF_RANGE 0xE0000012
+
+#ifndef ALL_ASSERT_OFF
+	#define BINF_ASSERT_RANGE(x) if((x) >= s){RaiseException(EXCEPTION_BINF_OUT_OF_RANGE, 0, 0, 0);}
+#else
+	#define BINF_ASSERT_RANGE(x)
+#endif
+
+#define BINF_REALLOC_MULT 	2
+#define BINF_REALLOC_LIMIT	0x40000000	// 1'073'741'824 B
+#define BINF_REALLOC_FIXED	0x6400000	// 104'857'600 B
+#define BINF_GRANULARITY	0x10000		// 65'536 B
+#define BINF_PAGE			0x1000		// 4'096 B
+
+#define BINF_ALLOC_SZ(x) ((x) - (x) % BINF_PAGE + BINF_PAGE) // Always allocate exact amount of pages
+#define BINF_ALLOC(x) (char *)VirtualAlloc(NULL, (x), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)
+#define BINF_FREE VirtualFree(d, 0, MEM_RELEASE)
+
+class binf
+{
+public:
+	binf();
+	binf(ui64 size);
+	binf(const binf &o) = delete;
+	binf(binf &&o) = delete;
+	
+	~binf();
+	
+	binf & operator=(const binf &o) = delete;
+	binf & operator=(binf &&o) = delete;
+	binf & operator=(ui64 ui);
+	binf & operator=(i64 i);
+	binf & operator=(i32 i);
+	
+	char & operator[](ui64 i);
+	const char & operator[](ui64 i) const;
+	
+	operator char *();
+	operator const char *() const;
+	
+	ui64 operator~() const; // Size operator
+	ui64 operator!() const; // True Size Operator
+	
+	binf & operator<<(char data);
+	
+	binf & Add(const char *data, ui64 size);
+	binf & Clear();
+	binf & SetSize(ui64 sz);
+	
+private:
+	ui64 ts;
+	ui64 s;
+	char *d;
+};
+
+inline binf::binf()
+{
+	ts = 0;
+	s = 0;
+	d = NULL;
+}
+
+inline binf::binf(ui64 size)
+{
+	ts = BINF_ALLOC_SZ(size);
+	s = 0;
+	d = BINF_ALLOC(ts);
+}
+
+inline binf::~binf()
+{
+	BINF_FREE;
+}
+
+inline binf & binf::operator=(ui64 ui)
+{
+	if(ts <= ui)
+	{
+		BINF_FREE;
+		ts = BINF_ALLOC_SZ(ui);
+		d = BINF_ALLOC(ts);
+	}
+	
+	s = 0;
+	return *this;
+}
+
+inline binf & binf::operator=(i64 i)
+{
+	if((i64)ts <= i)
+	{
+		BINF_FREE;
+		ts = BINF_ALLOC_SZ(i);
+		d = BINF_ALLOC(ts);
+	}
+	
+	s = 0;
+	return *this;
+}
+
+inline binf & binf::operator=(i32 i)
+{
+	if((i32)ts <= i)
+	{
+		BINF_FREE;
+		ts = BINF_ALLOC_SZ(i);
+		d = BINF_ALLOC(ts);
+	}
+	
+	s = 0;
+	return *this;
+}
+
+inline char & binf::operator[](ui64 i)
+{
+	BINF_ASSERT_RANGE(i)
+	return d[i];
+}
+	
+inline const char & binf::operator[](ui64 i) const
+{
+	BINF_ASSERT_RANGE(i)
+	return d[i];
+}
+
+inline binf::operator char *()
+{
+	return d;
+}
+
+inline binf::operator const char *() const
+{
+	return (const char *)d;
+}
+
+inline ui64 binf::operator~() const
+{ 
+	return s;
+}
+
+inline ui64 binf::operator!() const
+{
+	return ts;
+}
+
+inline binf & binf::operator<<(char data)
+{
+	ui64 ns = s + 1;
+	if(ts < ns)
+	{
+		char *tmp;
+		if(d == NULL) // First allocation
+		{
+			ts = BINF_PAGE;
+			tmp = BINF_ALLOC(ts);
+		}
+		else
+		{
+			ui64 nts = ts * BINF_REALLOC_MULT;
+			ts = nts > BINF_REALLOC_LIMIT ? ts + BINF_REALLOC_FIXED : nts;
+			tmp = BINF_ALLOC(ts);
+			mcpy(tmp, d, s);
+			BINF_FREE;
+		}
+		d = tmp;
+	}
+
+	d[s] = data;
+	s = ns;
+	
+	return *this;
+}
+
+inline binf & binf::Add(const char *data, ui64 size)
+{
+	ui64 ns = s + size;
+	if(ts < ns)
+	{
+		char *tmp;
+		ts = BINF_ALLOC_SZ(ns);
+		if(d == NULL) // First allocation
+		{
+			tmp = BINF_ALLOC(ts);
+		}
+		else
+		{
+			ui64 nts = ts * BINF_REALLOC_MULT;
+			ts = nts > BINF_REALLOC_LIMIT ? ts + BINF_REALLOC_FIXED : nts;
+			tmp = BINF_ALLOC(ts);
+			mcpy(tmp, d, s);
+			BINF_FREE;
+		}
+		d = tmp;
+	}
+	
+	mcpy(d+s, data, size);
+	s = ns;
+	
+	return *this;
+}
+
+inline binf & binf::Clear()
+{
+	s = 0;
+	return *this;
+}
+
+inline binf & binf::SetSize(ui64 sz)
+{
+	s = sz;
+	return *this;
+}
+
+
+
+
+//binf & SetInternalVals(ui64 trues, ui64 sz, char *data);
+//inline binf & binf::SetInternalVals(ui64 trues, ui64 sz, char *data)
+//{
+//	ts = trues, s = sz, d = data;
+//	return *this;
+//}

@@ -1,0 +1,946 @@
+#pragma once
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <utf>
+#include <binf>
+
+#include "padinf.h"
+#include "fileinf.h"
+
+#define FILE_PRINTER_DEF_PAD 0x20 // Space
+
+class FilePrinter
+{
+public:
+	FilePrinter();
+	FilePrinter(const char *fn);
+	FilePrinter(const wchar_t *fn);
+	FilePrinter(const txt &fn);
+	FilePrinter(const wtxt &fn);
+	
+	~FilePrinter();
+	
+	operator bool64();
+	
+	FilePrinter(const FilePrinter &other) = delete;
+	FilePrinter(FilePrinter &&other) = delete;
+	FilePrinter operator=(const FilePrinter &other) = delete;
+	FilePrinter operator=(FilePrinter &&other) = delete;
+	
+	FilePrinter & operator|(ui64 ui);
+	FilePrinter & operator|(ui32 ui);
+	FilePrinter & operator|(uli32 ui);
+	FilePrinter & operator|(ui16 ui);
+	FilePrinter & operator|(i64 i);
+	FilePrinter & operator|(i32 i);
+	FilePrinter & operator|(li32 i);
+	FilePrinter & operator|(i16 i);
+	FilePrinter & operator|(wchar_t wc);
+	FilePrinter & operator|(char c);
+	FilePrinter & operator|(bool b);
+	/* TODO
+	FilePrinter &operator|(float f);
+	FilePrinter &operator|(double d);
+	FilePrinter &operator|(long double d);
+	*/
+	FilePrinter & operator|(const void *vp);
+	FilePrinter & operator|(const char *ccp);
+	FilePrinter & operator|(const wchar_t *cwcp);
+	FilePrinter & operator|(cstr cs);
+	FilePrinter & operator|(cwstr cs);
+	
+	FilePrinter & operator|(const txt &t);
+	FilePrinter & operator|(const wtxt &wt);
+	FilePrinter & operator|(const binf &bf);
+	
+	FilePrinter & operator|(FilePrinter &(*func)(FilePrinter &fp));
+	FilePrinter & operator|(FilePrinter &fp);
+	FilePrinter & operator|(FileInfoA fi);
+	FilePrinter & operator|(FileInfoW fi);
+	FilePrinter & operator|(PadInfo pi);
+	FilePrinter & operator|(SpaceNum sn);
+	FilePrinter & operator|(StdTableColPad pn);
+	
+	friend FilePrinter & FC(FilePrinter &fp);	// Close the file and invalidate handle
+	friend FilePrinter & APP(FilePrinter &fp);	// Append to file, rather than overwrite it
+	friend FilePrinter & TRN(FilePrinter &fp);	// Truncate current file, erasing all it's content
+	
+	friend FilePrinter & H(FilePrinter &fp);	// Next number as hex
+	friend FilePrinter & S(FilePrinter &fp);	// Print Space
+	friend FilePrinter & N(FilePrinter &fp);	// Print Newline
+	friend FilePrinter & CR(FilePrinter &fp);	// Print Carriage Return
+	friend FilePrinter & WN(FilePrinter &fp);	// Print Windows Newline (\r\n)
+	friend FilePrinter & PN(FilePrinter &fp);	// Pad next number with '/' ' hundreds/bytes
+	friend FilePrinter & DP(FilePrinter &fp);	// Disable all padding (sets default values)
+	friend FilePrinter & PE(FilePrinter &fp);	// Print last error (GetLastError)
+	friend FilePrinter & I(FilePrinter &fp);	// Print opening/closing bracket [/]
+	
+	friend PadInfo SP(ui64 len);				// Set padding length
+	friend PadInfo SPC(char c);					// Set padding character
+	friend PadInfo SPD(ui64 dir);				// Set padding direction
+	friend PadInfo SPN(ui64 len);				// Set padding length for next print only
+	friend PadInfo SPCN(char c);				// Set padding character for next print only
+	friend PadInfo SPDN(ui64 dir);				// Set padding direction for next print only
+	
+	friend FileInfoA FO(const char *fn);		// Open new file, already opened file will be closed
+	friend FileInfoW FO(const wchar_t *fn);
+	friend FileInfoA FO(const txt &fn);
+	friend FileInfoW FO(const wtxt &fn);
+	
+	friend SpaceNum S(ui64 n);					// Print n Spaces
+	
+private:
+	txt PadDec(const txt &dn);
+	txt PadHex(const txt &hn);
+	ui64 PrintPad(ui64 txtl);
+	void PrintCenterPad(ui64 padl, bool right);
+	void ResetSinglePad();
+	
+private:
+	HANDLE oh;							// Output Handle
+	ui64 padlen;						// Next print's padding length
+	ui64 paddir;						// Padding direction
+	ui64 pre_padlen;					// Previous padding length
+	ui64 pre_paddir;					// Previous padding direction
+	bool hex;							// Hex numbers mode
+	bool npad;							// Number padding style
+	bool singpad;						// Single pad mode (only next print)
+	bool pre_padc_set;					// Prev. padding char was set
+	wchar_t padchar;					// Padding char
+	wchar_t pre_padchar;				// Previous padding char
+	DWORD bw;							// Bytes Written
+	ui32 reserved;
+};
+
+typedef FilePrinter filep;
+
+inline FilePrinter::FilePrinter()
+{
+	memset(this, 0, sizeof(FilePrinter));
+	padchar = FILE_PRINTER_DEF_PAD;
+	pre_padlen = UI64_MAX;
+	pre_paddir = UI64_MAX;
+	oh = INVALID_HANDLE_VALUE;
+}
+
+inline FilePrinter::FilePrinter(const char *fn)
+{
+	memset(this, 0, sizeof(FilePrinter));
+	padchar = FILE_PRINTER_DEF_PAD;
+	pre_padlen = UI64_MAX;
+	pre_paddir = UI64_MAX;
+	
+	// Create or open File or Device =================================================================
+	oh = CreateFileA(
+		fn,							//   [I]  Name of the file or device to create/open
+		GENERIC_WRITE,				//   [I]  Requested access GENERIC_READ|GENERIC_WRITE|0
+		FILE_SHARE_WRITE,			//   [I]  Sharing mode FILE_SHARE_READ|WRITE|DELETE|0
+		NULL,						// [I|O]  SECURITY_ATTRIBUTES for file, handle inheritability
+		OPEN_ALWAYS,				//   [I]  Action to take if file/device exist or not
+		0,							//   [I]  Attributes and flags for file/device
+		NULL);						// [I|O]  Handle to template file to copy attributes from
+	// ===============================================================================================
+}
+
+inline FilePrinter::FilePrinter(const wchar_t *fn)
+{
+	memset(this, 0, sizeof(FilePrinter));
+	padchar = FILE_PRINTER_DEF_PAD;
+	pre_padlen = UI64_MAX;
+	pre_paddir = UI64_MAX;
+	
+	oh = CreateFileW(fn, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, 0, NULL);
+}
+
+inline FilePrinter::FilePrinter(const txt &fn)
+{
+	memset(this, 0, sizeof(FilePrinter));
+	padchar = FILE_PRINTER_DEF_PAD;
+	pre_padlen = UI64_MAX;
+	pre_paddir = UI64_MAX;
+	
+	oh = CreateFileA(fn, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, 0, NULL);
+}
+
+inline FilePrinter::FilePrinter(const wtxt &fn)
+{
+	memset(this, 0, sizeof(FilePrinter));
+	padchar = FILE_PRINTER_DEF_PAD;
+	pre_padlen = UI64_MAX;
+	pre_paddir = UI64_MAX;
+	
+	oh = CreateFileW(fn, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, 0, NULL);
+}
+
+inline FilePrinter::~FilePrinter()
+{
+	CloseHandle(oh);
+}
+
+inline FilePrinter::operator bool64()
+{
+	return oh != INVALID_HANDLE_VALUE;
+}
+
+inline FilePrinter & FilePrinter::operator|(ui64 ui)
+{
+	txt it = hex ? hex = false, npad ? PadHex(i2h(ui)) : i2h(ui) : npad ? PadDec(i2t(ui)) : i2t(ui);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(ui32 ui)
+{
+	txt it = hex ? hex = false, npad ? PadHex(i2h(ui)) : i2h(ui) : npad ? PadDec(i2t(ui)) : i2t(ui);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(uli32 uli)
+{
+	txt it = hex ? hex = false, npad ? PadHex(i2h(uli)) : i2h(uli) : npad ? PadDec(i2t(uli)) : i2t(uli);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(ui16 ui)
+{
+	//txt it = hex ? hex = false, i2h(ui) : i2t(ui);
+	txt it = hex ? hex = false, npad ? PadHex(i2h(ui)) : i2h(ui) : npad ? PadDec(i2t(ui)) : i2t(ui);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(i64 i)
+{
+	//txt it = hex ? hex = false, i2h((ui64)i) : i2t(i);
+	txt it = hex ? hex = false, npad ? PadHex(i2h((ui64)i)) : i2h((ui64)i) : npad ? PadDec(i2t(i)) : i2t(i);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(i32 i)
+{
+	txt it = hex ? hex = false, npad ? PadHex(i2h((ui64)i)) : i2h((ui64)i) : npad ? PadDec(i2t(i)) : i2t(i);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(li32 li)
+{
+	txt it = hex ? hex = false, npad ? PadHex(i2h((ui64)li)) : i2h((ui64)li) : npad ? PadDec(i2t(li)) : i2t(li);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(i16 i)
+{
+	txt it = hex ? hex = false, npad ? PadHex(i2h((ui64)i)) : i2h((ui64)i) : npad ? PadDec(i2t(i)) : i2t(i);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(wchar_t wc)
+{
+	txt t8 = wt2u8((wtxt)wc);
+	
+	ui64 ts = u8ts(t8);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+		PrintPad(ts);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(ts);
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(char c)
+{
+	if(paddir == PADR)
+	{
+		WriteFile(oh, &c, 1, &bw, NULL);
+		PrintPad(1);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(1);
+		WriteFile(oh, &c, 1, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, &c, 1, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(bool b)
+{
+	DWORD s;
+	const char *bstr;
+	if(b)
+	{
+		s = 4;
+		bstr = "true";
+	}
+	else
+	{
+		s = 5;
+		bstr = "false";
+	}
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, bstr, s, &bw, NULL);
+		PrintPad(s);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(s);
+		WriteFile(oh, bstr, s, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, bstr, s, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+ /* TODO
+inline FilePrinter & FilePrinter::operator|(float f)
+{
+	
+}
+
+inline FilePrinter & FilePrinter::operator|(double d)
+{
+	
+}
+
+inline FilePrinter & FilePrinter::operator|(long double d)
+{
+	
+}
+*/
+inline FilePrinter & FilePrinter::operator|(const void *vp)
+{
+	if(hex)
+	{
+		hex = false;
+	}
+	
+	txt it = i2h((ui64)vp);
+	txti(it, 0, L("0x"));
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintPad(~it);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~it);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, it, (DWORD)~it, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(const char *ccp)
+{	
+	return *this|cstr({ ccp, strl(ccp) });
+}
+
+inline FilePrinter & FilePrinter::operator|(const wchar_t *cwcp)
+{
+	return *this|cwstr({ cwcp, strl(cwcp) });
+}
+
+inline FilePrinter & FilePrinter::operator|(cstr cs)
+{
+	if(paddir == PADR)
+	{
+		WriteFile(oh, cs.t, (DWORD)cs.s, &bw, NULL);
+		PrintPad(cs.s);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(cs.s);
+		WriteFile(oh, cs.t, (DWORD)cs.s, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, cs.t, (DWORD)cs.s, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(cwstr cs)
+{
+	wtxt tmp = cs;
+	txt t8 = wt2u8(tmp);
+	
+	ui64 ts = u8ts(t8);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+		PrintPad(ts);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(ts);
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(const txt &t)
+{
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, t, (DWORD)~t, &bw, NULL);
+		PrintPad(~t);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(~t);
+		WriteFile(oh, t, (DWORD)~t, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, t, (DWORD)~t, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(const wtxt &wt)
+{
+	txt t8 = wt2u8(wt);
+	ui64 ts = u8ts(t8);
+	
+	if(paddir == PADR)
+	{
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+		PrintPad(ts);
+	}
+	else if(paddir == PADL)
+	{
+		PrintPad(ts);
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+	}
+	else // Center
+	{
+		ui64 lr_pad = padlen/2;
+		PrintCenterPad(lr_pad, false);
+		WriteFile(oh, t8, (DWORD)~t8, &bw, NULL);
+		PrintCenterPad(lr_pad + padlen % 2, true);
+	}
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(const binf &bf)
+{
+	WriteFile(oh, bf, (DWORD)~bf, &bw, NULL);
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(FilePrinter &(*func)(FilePrinter &fp))
+{
+	return func(*this);
+}
+
+inline FilePrinter & FilePrinter::operator|(FilePrinter &fp)
+{
+	return fp;
+}
+
+inline FilePrinter & FilePrinter::operator|(FileInfoA fi)
+{
+	if(oh != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(oh);
+	}
+	
+	oh = CreateFileA(fi.fn, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, 0, NULL);
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(FileInfoW fi)
+{
+	if(oh != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(oh);
+	}
+	
+	oh = CreateFileW(fi.fn, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, 0, NULL);
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(PadInfo pi)
+{
+	if(pi.val & PAD_INFO_PAD_NEXT)
+	{
+		singpad = true;
+		pi.val &= 0xDFFFFFFFFFFFFFFF;
+	}
+	
+	ui64 pset_type = pi.val & 0xC000000000000000; // 0x11000...
+	switch(pset_type)
+	{
+	case PAD_INFO_LENGTH: // Is zero, no need to use the mask
+		if(singpad)
+		{
+			pre_padlen = padlen;
+		}
+		padlen = pi.val;
+		break;
+	case PAD_INFO_CHAR:
+		if(singpad)
+		{
+			pre_padchar = padchar;
+			pre_padc_set = true;
+		}
+		padchar = (wchar_t)(pi.val & 0x3FFFFFFFFFFFFFFF);
+		break;
+	case PAD_INFO_DIR:
+		if(singpad)
+		{
+			pre_paddir = paddir;
+		}
+		paddir = pi.val & 0x3FFFFFFFFFFFFFFF;
+		break;
+	default:
+		break;
+	}
+	
+	return *this;
+}
+
+inline FilePrinter & FilePrinter::operator|(SpaceNum sn)
+{
+	if(sn.n == 0)
+	{
+		return *this;
+	}
+	
+	txt sp = sn.n;
+	memset(sp, ' ', sn.n);
+	txtssz(sp, sn.n);
+	p|sp;
+	return *this;
+}
+
+inline txt FilePrinter::PadDec(const txt &dn)
+{
+	char num[27]; // 18'446'744'073'709'551'616 MAX
+	num[26] = 0;
+	char *nmax = num + 26;
+	char *n = nmax;
+	
+	ui32 d = 0;
+	for(i64 i = (i64)~dn-1; i >= 0; --i)
+	{
+		*(--n) = *((const char *)dn + i);
+		if(++d % 3 == 0)
+		{
+			*(--n) = '\'';
+		}
+	}
+	
+	if(*n == '\'')
+	{
+		++n;
+	}
+	
+	npad = false;
+	return cstr({ n, (ui64)(nmax - n) });
+}
+
+inline txt FilePrinter::PadHex(const txt &hn)
+{
+	char num[25]; // 'FF'FF'FF'FF'FF'FF'FF'FF MAX
+	num[24] = 0;
+	char *nmax = num + 24;
+	char *n = nmax;
+	
+	ui32 d = 0;
+	for(i64 i = (i64)~hn-1; i >= 0; --i)
+	{
+		*(--n) = *((const char *)hn + i);
+		if(++d % 2 == 0)
+		{
+			*(--n) = ' ';
+		}
+	}
+	
+	if(*n == ' ')
+	{
+		++n;
+	}
+	
+	npad = false;
+	return cstr({ n, (ui64)(nmax - n) });
+}
+
+inline ui64 FilePrinter::PrintPad(ui64 txtl)
+{
+	if(txtl >= padlen)
+	{
+		if(singpad)
+		{
+			ResetSinglePad();
+		}
+		return 0;
+	}
+	
+	txtl = padlen - txtl;
+	
+	if(padchar <= 0x7F)
+	{
+		txt pad = txtl;
+		memset(pad, padchar, txtl);
+		WriteFile(oh, pad, (DWORD)txtl, &bw, NULL);
+	}
+	else
+	{
+		txt padchar_txt = wt2u8((wtxt)padchar);
+		for(ui64 i = 0; i < txtl; ++i)
+		{
+			WriteFile(oh, padchar_txt, (DWORD)~padchar_txt, &bw, NULL);
+		}
+	}
+	
+	if(singpad)
+	{
+		ResetSinglePad();
+	}
+	
+	return txtl;
+}
+
+inline void FilePrinter::PrintCenterPad(ui64 padl, bool right)
+{
+	if(padl == 0)
+	{
+		if(singpad && right)
+		{
+			ResetSinglePad();
+		}
+		return;
+	}
+	
+	if(padchar <= 0x7F)
+	{
+		txt pad = padl;
+		memset(pad, padchar, padl);
+		WriteFile(oh, pad, (DWORD)padl, &bw, NULL);
+	}
+	else
+	{
+		txt padchar_txt = wt2u8((wtxt)padchar);
+		for(ui64 i = 0; i < padl; ++i)
+		{
+			WriteFile(oh, padchar_txt, (DWORD)~padchar_txt, &bw, NULL);
+		}
+	}
+	
+	if(singpad && right)
+	{
+		ResetSinglePad();
+	}
+}
+
+inline void FilePrinter::ResetSinglePad()
+{
+	if(pre_padlen != UI64_MAX)
+	{
+		padlen = pre_padlen;
+		pre_padlen = UI64_MAX;
+	}
+	if(pre_padc_set)
+	{
+		padchar = pre_padchar;
+		pre_padc_set = false;
+	}
+	if(pre_paddir != UI64_MAX)
+	{
+		paddir = pre_paddir;
+		pre_paddir = UI64_MAX;
+	}
+	
+	singpad = false;
+}
+
+inline FilePrinter & FC(FilePrinter &fp)
+{
+	CloseHandle(fp.oh);
+	fp.oh = INVALID_HANDLE_VALUE;
+	return fp;
+}
+
+inline FilePrinter & APP(FilePrinter &fp)
+{
+	LARGE_INTEGER to_mov;
+	to_mov.QuadPart = 0;
+	SetFilePointerEx(fp.oh, to_mov, NULL, FILE_END);
+	return fp;
+}
+
+inline FilePrinter & TRN(FilePrinter &fp)
+{
+	LARGE_INTEGER to_mov;
+	to_mov.QuadPart = 0;
+	SetFilePointerEx(fp.oh, to_mov, NULL, FILE_BEGIN);
+	SetEndOfFile(fp.oh);
+	return fp;
+}
+
+inline FilePrinter & H(FilePrinter &fp)
+{
+	fp.hex = true;
+	return fp;
+}
+
+inline FilePrinter & S(FilePrinter &fp)
+{
+	WriteFile(fp.oh, " ", 1, &fp.bw, NULL);
+	return fp;
+}
+
+inline FilePrinter & N(FilePrinter &fp)
+{
+	WriteFile(fp.oh, "\n", 1, &fp.bw, NULL);
+	return fp;
+}
+
+inline FilePrinter & CR(FilePrinter &fp)
+{
+	WriteFile(fp.oh, "\r", 1, &fp.bw, NULL);
+	return fp;
+}
+
+inline FilePrinter & WN(FilePrinter &fp)
+{
+	WriteFile(fp.oh, "\r\n", 2, &fp.bw, NULL);
+	return fp;
+}
+
+inline FilePrinter & PN(FilePrinter &fp)
+{
+	fp.npad = true;
+	return fp;
+}
+
+inline FilePrinter & DP(FilePrinter &fp)
+{
+	fp.padlen = 0;
+	fp.padchar = FILE_PRINTER_DEF_PAD;
+	fp.paddir = PADL;
+	return fp;
+}
+
+inline FilePrinter & PE(FilePrinter &fp)
+{
+	DWORD err = GetLastError();
+	static char buff[300];
+	
+	FormatMessageA(
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		err,
+		0,
+		buff,
+		300,
+		NULL);
+	
+	// Remove pesky newline
+	char *b = buff-1;
+	while(*(++b) != 0);
+	*(b-2) = 0;
+	
+	fp|"["|R|"E"|err|D|"] "|buff;
+	return fp;
+}
+
+inline FilePrinter & I(FilePrinter &fp)
+{
+	static char brak = '[';
+	WriteFile(fp.oh, &brak, 1, &fp.bw, NULL);
+	brak = brak == '[' ? ']' : '[';
+	return fp;
+}
