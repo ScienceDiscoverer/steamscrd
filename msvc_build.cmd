@@ -36,7 +36,7 @@ if exist lib\ext\curl (
 	cd %~dp0
 )
 
-set "libs=txt wtxt utf utfcase txtp wtxtp stdp stdr sddb darr time wndint"
+set "libs=txt wtxt utf utfcase txtp wtxtp stdp stdr sddb darr time wndint ftools"
 set "obj_out_dir=/Folib\"
 
 :build_all_libs_loop

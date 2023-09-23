@@ -4,7 +4,7 @@
 &nbsp;&nbsp;&nbsp;![GitHub all releases](https://img.shields.io/github/downloads/ScienceDiscoverer/steamscrd/total)
 &nbsp;&nbsp;&nbsp;[![Sponsor Badge](https://img.shields.io/badge/%E2%98%95_Sponsor-blue)](https://www.buymeacoffee.com/sciencediscoverer)
 
-Download all the screenshots from a public steam profile. No sign-in required. Screenshot description and upload date are embedded directly into the `JPG` file, saved into separate folder for each game. Profanity filter and restricted content is not a problem for this tool.
+Download all the screenshots from a public Steam profile. No sign-in required. Screenshot description and upload date are embedded directly into the `JPG` file, saved into separate folder for each game. Profanity filter and restricted content is not a problem for this tool.
 
 ![Program GIF demo](readme/steamscrd.gif)
 
@@ -27,19 +27,19 @@ Launching `steamscrd` without any command line argument activates direct input i
 
 ## How to get `user ID` / `app ID`
 
-`user ID` is a steam user's unique custom identifier. You can find it by visiting the profile page:
+`user ID` is a Steam user's unique custom identifier. You can find it by visiting the profile page:
 
 ```
 https://steamcommunity.com/id/[>>>sciencediscoverer<<<]
 ```
-If said user never tried to set up a unique steam profile ID in the options, his/her profile address will look like this:
+If said user never tried to set up a unique Steam profile ID in the options, his/her profile address will look like this:
 
 ```
 https://steamcommunity.com/profiles/[>>>765611980XXXXXXXX<<<]
 ```
 You can use this number instead.
 
-`app ID` is a steam game's unique identifier. You can get it from the game's store page:
+`app ID` is a Steam game's unique identifier. You can get it from the game's store page:
 
 ```
 https://store.steampowered.com/app/[>>>292030<<<]/_3/
@@ -47,6 +47,7 @@ https://store.steampowered.com/app/[>>>292030<<<]/_3/
 
 ## Tips
 
+* You can view screenshot comments by enabling `Comments` column in the Explorer. Switch to `View -> Details`, right-click on any column title and press `More...`, tick `Comments`, press `OK`. You can also use image viewr like [IrfanView](https://www.irfanview.com/main_download_engl.htm) to view comment while actually enjoying the image itself. Use [this instructions](https://irfanview-forum.de/forum/program/feature-requests/11035-) to enable the comment.
 * You can pause download at any time by pressing `SPACE`. Unpause by pressing `SPACE` again.
 * If you (for whatever reason) want to have all your screenshots in a single folder, instead of organised into separate folder for each game, you can use this `CMD` command to copy/move all images to a single folder: `for /r D:\<YOURID> %I in (*.jpg) do copy "%I" D:\ALL_SCREENS`.
 
