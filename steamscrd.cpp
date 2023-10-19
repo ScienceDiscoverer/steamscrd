@@ -16,20 +16,6 @@
 // Only 2342 of my 6737 screenshots has comments 34.8%
 // Steam max screenshot description length: 140 symbols
 
-
-
-//TOREADMEMD
-// - Mb grab descript from wall page to avoid profaniti filtre but dupez problem... TELL THIS FEATURE IN DESCRIPT!
-// - bastardz block kinki contente.l...... TO DESCRIPT
-//TOPROGDESCRIPT for /r D:\P\MT\YORID %I in (*.jpg) do copy "%I" D:\P\MT\ALL IF YO BASTARDZ DONT WANT MY BEAUTIFULU FOLDA STRUCTURE YO CAN COPY ALL SCREENZ TO ONE FOLDA LIKE DIS
-// mention that can be paused by using space!!!
-
-
-
-
-
-
-
 #define INIT_SCR_SIZE 8388608
 
 ui64 total_scrs;
@@ -451,7 +437,7 @@ DWORD __declspec(nothrow) inputThread(LPVOID lp)
 						ResetEvent(pause_event);
 						Sleep(2000);
 						SetConsoleCursorPosition(oh, xy);
-						p|B|"PAUSED"|D;
+						p|B|"PAUSED";
 						SetConsoleCursorPosition(oh, con_inf.dwCursorPosition);
 					}
 					else
@@ -605,7 +591,7 @@ cwstr usage = WL(
 
 inline void argError(cwstr arg)
 {
-	p|"Error in argument "|R|arg|D|" detected!"|N;
+	p|"Error in argument "|R|arg|" detected!"|N;
 	p|usage|N|"Press any key to exit..."|P;
 }
 
@@ -678,10 +664,10 @@ int wmain(ui64 argc, wchar_t **argv)
 		
 		p|SCP(0,2)|"Enter steam user ID to start download."|N;
 		p|"Additional space-separated options:"|N;
-		p|"[app="|G|"XXXX"|D|"] --> game "|G|"ID"|D|" to download screenshots from"|N;
-		p|"[spage="|G|"XX"|D|"] --> "|G|"NUMBER"|D|" of page to start download from"|N|N;
+		p|"[app="|G|"XXXX"|"] --> game "|G|"ID"|" to download screenshots from"|N;
+		p|"[spage="|G|"XX"|"] --> "|G|"NUMBER"|" of page to start download from"|N|N;
 		p|"For more info and to report problems visit:"|N;
-		p|B|"https://github.com/ScienceDiscoverer/steamscrd"|D|SCP(0,0);
+		p|B|"https://github.com/ScienceDiscoverer/steamscrd"|SCP(0,0);
 		
 		txt input = 127;
 	retry_input:
@@ -695,7 +681,7 @@ int wmain(ui64 argc, wchar_t **argv)
 			
 			if(app_st == NFND && page_st == NFND)
 			{
-				p|SCP(0,1)|CLL|R|"No valid arguments found!"|D|" Retry."|SCP(0,0)|CLL;
+				p|SCP(0,1)|CLL|R|"No valid arguments found!"|" Retry."|SCP(0,0)|CLL;
 				goto retry_input;
 			}
 			
@@ -704,7 +690,7 @@ int wmain(ui64 argc, wchar_t **argv)
 				app_st += L("app=").s;
 				if(app_st >= ~input) // Empty argument
 				{
-					p|SCP(0,1)|CLL|R|"Error in [app=] argument!"|D|" Retry."|SCP(0,0)|CLL;
+					p|SCP(0,1)|CLL|R|"Error in [app=] argument!"|" Retry."|SCP(0,0)|CLL;
 					goto retry_input;
 				}
 				
@@ -714,7 +700,7 @@ int wmain(ui64 argc, wchar_t **argv)
 				
 				if(txtnui(game_id)) // ID is not an unsigned integer
 				{
-					p|SCP(0,1)|CLL|R|"Error in [app=] argument!"|D|" Retry."|SCP(0,0)|CLL;
+					p|SCP(0,1)|CLL|R|"Error in [app=] argument!"|" Retry."|SCP(0,0)|CLL;
 					goto retry_input;
 				}
 			}
@@ -723,7 +709,7 @@ int wmain(ui64 argc, wchar_t **argv)
 				page_st += L("spage=").s;
 				if(page_st >= ~input) // Empty argument
 				{
-					p|SCP(0,1)|CLL|R|"Error in [spage=] argument!"|D|" Retry."|SCP(0,0)|CLL;
+					p|SCP(0,1)|CLL|R|"Error in [spage=] argument!"|" Retry."|SCP(0,0)|CLL;
 					goto retry_input;
 				}
 				
@@ -733,7 +719,7 @@ int wmain(ui64 argc, wchar_t **argv)
 				
 				if(txtnui(pn)) // ID is not an unsigned integer
 				{
-					p|SCP(0,1)|CLL|R|"Error in [spage=] argument!"|D|" Retry."|SCP(0,0)|CLL;
+					p|SCP(0,1)|CLL|R|"Error in [spage=] argument!"|" Retry."|SCP(0,0)|CLL;
 					goto retry_input;
 				}
 				
@@ -769,7 +755,7 @@ int wmain(ui64 argc, wchar_t **argv)
 
 	if(!curl)
 	{
-		p|"Failed to initialise CURL! Press "|B|"SPACE"|D|" to exit..."|N;
+		p|"Failed to initialise CURL! Press "|B|"SPACE"|" to exit..."|N;
 		pause_thread();
 		curl_global_cleanup();
 		return 1;
@@ -801,7 +787,7 @@ retry_first_grid_load:
 	res = curl_easy_perform(curl);
 	if(res != CURLE_OK)
 	{
-		p|R|"ERR"|res|D|"; Failed to load first grid page! Retrying in 2 sec...";
+		p|RS|"ERR"|res|DS|"; Failed to load first grid page! Retrying in 2 sec...";
 		txtclr(grid_page);
 		Sleep(2000);
 		resetErrorOutput();
@@ -820,21 +806,21 @@ retry_first_grid_load:
 		{
 			if(!profile_url_tried)
 			{
-				p|SCP(0,0)|R|"Failed to locate user with ID "|RD|user_id|R|"! Trying profile ID URL..."|D;
+				p|SCP(0,0)|R|"Failed to locate user with ID "|RD|user_id|R|"! Trying profile ID URL...";
 				txtr(burl, 27, 2, L("profiles")); // Try to get through by using raw 64 bit profile ID
 				profile_url_tried = true;
 				txtclr(grid_page);
 				goto retry_url;
 			}
 			
-			p|R|"Failed to locate user profile!"|D;
-			p|N|"Press "|B|"SPACE"|D|" to exit...";
+			p|R|"Failed to locate user profile!";
+			p|N|"Press "|B|"SPACE"|" to exit...";
 			pause_thread();
 			p|CLS|RCON;
 			return 1;
 		}
 		
-		p|R|"Failed to load any screenshots on the first grid page!"|D|" Retrying in 2 seconds...";
+		p|R|"Failed to load any screenshots on the first grid page!"|" Retrying in 2 seconds...";
 		txtclr(grid_page);
 		Sleep(2000);
 		resetErrorOutput();
@@ -906,7 +892,7 @@ retry_first_grid_load:
 		res = curl_easy_perform(curl);
 		if(res != CURLE_OK)
 		{
-			p|R|"ERR"|res|D|"; Failed to access screenshot grid page #"|pn|"! Retrying in 2 sec...";
+			p|RS|"ERR"|res|DS|"; Failed to access screenshot grid page #"|pn|"! Retrying in 2 sec...";
 			txtclr(grid_page);
 			Sleep(2000);
 			resetErrorOutput();
@@ -917,7 +903,7 @@ retry_first_grid_load:
 		
 		if(lnkp == NFND) // Grid page failed to load correctly
 		{
-			p|R|"Failed to load any screenshots on page #"|R|pn|D|"! Retrying in 2 seconds...";
+			p|R|"Failed to load any screenshots on page #"|R|pn|"! Retrying in 2 seconds...";
 			txtclr(grid_page);
 			Sleep(2000);
 			resetErrorOutput();
@@ -936,7 +922,7 @@ retry_first_grid_load:
 		
 		if(counter != fg_img_n - 1)
 		{
-			//p|"Current internal screenshot index ("|R|counter|D|") does not match steam grid page index ("|B|fg_img_n-1|D|")!"|N;
+			//p|"Current internal screenshot index ("|R|counter|") does not match steam grid page index ("|B|fg_img_n-1|")!"|N;
 			//p|"Correcting in 2 sec";
 			counter = fg_img_n - 1;
 			//Sleep(2000);
@@ -959,12 +945,12 @@ retry_first_grid_load:
 		if(links_found != lg_img_n - fg_img_n + 1) // Duplicates found or some screenshots was not loaded
 		{
 			i64 dupez = (i64)links_found - i64(lg_img_n - fg_img_n + 1);
-			p|R|dupez|RD|" duplicate";
+			p|RS|dupez|RDS|" duplicate";
 			if(dupez > 1 || dupez < -1)
 			{
 				p|'s';
 			}
-			p|D|" found on page #"|R|pn|D|"! Reloading in 2 seconds...";
+			p|DS|" found on page #"|R|pn|"! Reloading in 2 seconds...";
 			
 			txtclr(grid_page);
 			Sleep(2000);
@@ -1040,7 +1026,7 @@ retry_first_grid_load:
 			res = curl_easy_perform(curl);
 			if(res != CURLE_OK)
 			{
-				p|'['|R|'E'|res|D|"] ";
+				p|'['|RS|'E'|res|DS|"] ";
 				
 				if(res == CURLE_URL_MALFORMAT) // The URL was not properly formatted. 
 				{
@@ -1065,7 +1051,7 @@ retry_first_grid_load:
 			
 			if(flp == NFND)
 			{
-				p|"Found some "|R|"mature"|D|" content! Feeding "|V|"The Kinky Cookie"|D|" to server in 2 sec...";
+				p|"Found some "|R|"mature"|" content! Feeding "|V|"The Kinky Cookie"|" to server in 2 sec...";
 				txt allow_kinky_cookie = L("wants_mature_content_item_") + link + L("=1;");
 				curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)allow_kinky_cookie);
 				txtclr(scr_page);
@@ -1106,7 +1092,7 @@ retry_first_grid_load:
 			res = curl_easy_perform(curl);
 			if(res != CURLE_OK)
 			{
-				p|R|"ERR"|res|D|"; Failed to access raw screenshot page #"|counter+1|"! Retrying in 2 sec...";
+				p|RS|"ERR"|res|DS|"; Failed to access raw screenshot page #"|counter+1|"! Retrying in 2 sec...";
 				scrshot.Clear();
 				Sleep(2000);
 				resetErrorOutput();
@@ -1124,7 +1110,7 @@ retry_first_grid_load:
 			filep fp = fname;
 			if(!fp)
 			{
-				p|PE|" In CreateFileW line "|__LINE__|'.'|N|"Press "|B|"SPACE"|D|" to skip this file..."|N;
+				p|PE|" In CreateFileW line "|__LINE__|'.'|N|"Press "|B|"SPACE"|" to skip this file..."|N;
 				pause_thread();
 				resetErrorOutput();
 				goto skip_file_write;
@@ -1139,8 +1125,8 @@ retry_first_grid_load:
 			{
 				if(writeComment(fname, t2u16(descript)) != S_OK) // TOFIX THIS CREATES \R\N NEWLINES IN THE MIDDLE OF COMMENTS IN RARE CASES
 				{
-					p|"Failed to write comment into "|B|fname|D|N;
-					p|"Press "|B|"SPACE"|D|" to continue..."|N;
+					p|"Failed to write comment into "|B|fname|N;
+					p|"Press "|B|"SPACE"|" to continue..."|N;
 					pause_thread();
 					resetErrorOutput();
 				}
@@ -1181,24 +1167,24 @@ retry_first_grid_load:
 	
 	CoUninitialize();
 	
-	p|SCP(12,4)|CLL|G|"Finished"|D; // Cover up some "Time Left" rounding errors (1 second left after finishing)
+	p|SCP(12,4)|CLL|G|"Finished"; // Cover up some "Time Left" rounding errors (1 second left after finishing)
 	
 	resetErrorOutput();
 	
 	if(start_page > max_page)
 	{
-		p|R|"Start page "|RD|start_page|R|" is bigger than user's max page "|RD|max_page|R|'!'|D;
+		p|R|"Start page "|RD|start_page|R|" is bigger than user's max page "|RD|max_page|R|'!';
 	}
 	else if(tot_down == total_scrs)
 	{
-		p|GD|"All "|G|total_scrs|GD|" screenshots where downloaded successfully!"|D;
+		p|GD|"All "|G|total_scrs|GD|" screenshots where downloaded successfully!";
 	}
 	else
 	{
-		p|G|tot_down|GD|" from "|G|total_scrs|GD|" screenshots where downloaded successfully!"|D;
+		p|G|tot_down|GD|" from "|G|total_scrs|GD|" screenshots where downloaded successfully!";
 	}
 	
-	p|N|"Press "|B|"SPACE"|D|" to exit...";
+	p|N|"Press "|B|"SPACE"|" to exit...";
 	pause_thread();
 	p|CLS|RCON;
 	return 0;
