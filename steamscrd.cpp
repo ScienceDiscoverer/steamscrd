@@ -1135,19 +1135,35 @@ retry_first_grid_load:
 			txt full_image_link = txtsp(scr_page, flp, fep);
 			
 			//<a href=L("https://steamcommunity.com/app/221260/screenshots/")>Little Inferno</a>
+			//<div class="screenshotAppName">AM2R</div> ---> Removed from Steam Store
 			ui64 anp = txtf(scr_page, fep, L("screenshotAppName")); // screenshotAppName position
-			ui64 idp = txtf(scr_page, anp, L("/app/")) + 5; // Steam Application ID position
-			ui64 iep = txtf(scr_page, idp, '/') - 1; // Steam Application ID end position
-			txt app_id = txtsp(scr_page, idp, iep);
+			ui64 ane = txtf(scr_page, anp, L("</div>")); // screenshotAppName end position
 			
-			//<a href="https://steamcommunity.com/app/221260/screenshots/">Little Inferno</a>
-			ui64 nmp = txtf(scr_page, iep, '>') + 1; // Name position
-			ui64 nep = txtf(scr_page, nmp, '<') - 1; // Name end position
-			txt name = txtsp(scr_page, nmp, nep);
+			txt scr_app_name = txtsp(scr_page, anp, ane);
+			txt app_id = L("REMOVED");
+			txt name = 127;
+			
+			ui64 idp = txtf(scr_app_name, 0, L("/app/")); // Steam Application ID position
+			if(idp != NFND)
+			{
+				idp += 5;
+				ui64 iep = txtf(scr_app_name, idp, '/') - 1; // Steam Application ID end position
+				app_id = txtsp(scr_app_name, idp, iep);
+				ui64 nmp = txtf(scr_app_name, iep, '>') + 1; // Name position
+				ui64 nep = txtf(scr_app_name, nmp, '<') - 1; // Name end position
+				name = txtsp(scr_app_name, nmp, nep);
+			}
+			else
+			{
+				ui64 nmp = txtf(scr_app_name, 0, '>') + 1; // Name position
+				ui64 nep = txtf(scr_app_name, nmp, '<') - 1; // Name end position
+				name = txtsp(scr_app_name, nmp, nep);
+			}
+			
 			cleanName(name);
 			
 			//<div class="detailsStatRight">22 Jan, 2013 @ 3:58am</div>
-			ui64 dsp0 = txtf(scr_page, nep, L("detailsStatRight")) + 16; // Skip first detailsStatRight
+			ui64 dsp0 = txtf(scr_page, ane, L("detailsStatRight")) + 16; // Skip first detailsStatRight
 			ui64 dsp = txtf(scr_page, dsp0, L("detailsStatRight")) + 16; // Skip second detailsStatRight
 			ui64 dtp = txtf(scr_page, dsp, '>') + 1; // Datetime position
 			ui64 dep = txtf(scr_page, dtp, '<') - 1; // Datetime end position
@@ -1181,7 +1197,7 @@ retry_first_grid_load:
 			filep fp = fname;
 			if(!fp)
 			{
-				p|PE|" In CreateFileW line "|__LINE__|'.'|N|"Press "|B|"SPACE"|" to skip this file..."|N;
+				p|PE|" In CreateFileW line "|__LINE__|": fname = "|I|fname|I|N|"Press "|B|"SPACE"|" to skip this file..."|N;
 				pause_thread();
 				resetErrorOutput();
 				goto skip_file_write;
