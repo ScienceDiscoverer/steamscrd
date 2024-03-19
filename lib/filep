@@ -933,7 +933,7 @@ inline FilePrinter & PE(FilePrinter &fp)
 	while(*(++b) != 0);
 	*(b-2) = 0;
 	
-	fp|"["|R|"E"|err|D|"] "|buff;
+	fp|"["|RS|"E"|err|DS|"] "|buff;
 	return fp;
 }
 

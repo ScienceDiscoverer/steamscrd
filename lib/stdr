@@ -12,7 +12,7 @@
 
 #define STD_READER
 
-#define STDR_INPUT_BUFF_SZ 512
+#define STDR_INPUT_BUFF_SZ 4096
 
 class StdReader
 {

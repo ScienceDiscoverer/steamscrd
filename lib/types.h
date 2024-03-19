@@ -19,10 +19,15 @@ typedef unsigned long long int bool64;
 DWORD NOTHROW 
 #define PARAMNOUSE __pragma(warning( suppress : 4100 ))
 
-#define MAX(x,y) (((x) > (y)) ? (x) : (y))
-#define MIN(x,y) (((x) < (y)) ? (x) : (y))
+#define ABS(x)				((x) < 0 ? (-(x)) : (x))
+#define MAX(x,y)			(((x) > (y)) ? (x) : (y))
+#define MIN(x,y)			(((x) < (y)) ? (x) : (y))
+#define CLAMP(x, min, max)	((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
 
-#define NFND		0xFFFFFFFFFFFFFFFF		// Value was not found
+#define HW(x) (((unsigned int)x) >> 16)
+#define LW(x) (((unsigned int)x) & 0xFFFF)
+
+#define NFND		0xFFFFFFFFFFFFFFFF // Value was not found
 
 #define UI64_MAX	0xFFFFFFFFFFFFFFFF
 #define UI32_MAX	0xFFFFFFFF
@@ -38,5 +43,9 @@ DWORD NOTHROW
 #define I32_MIN		((i32)(ui32)0x80000000)
 #define I16_MIN		((i16)(ui16)0x8000)
 #define I8_MIN		((i8)(ui8)0x80)
+
+#define MBYTE_1		0x100000	//  1 048 576 B
+#define MBYTE_8		0x800000	//  8 388 608 B
+#define MBYTE_16	0x1000000	// 16 777 216 B
 
 inline void empty() {}

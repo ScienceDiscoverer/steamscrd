@@ -20,8 +20,9 @@
 #define BINF_REALLOC_FIXED	0x6400000	// 104'857'600 B
 #define BINF_GRANULARITY	0x10000		// 65'536 B
 #define BINF_PAGE			0x1000		// 4'096 B
+#define BINF_PAGE_ALIGN		0xFFF		// 4'095 B
 
-#define BINF_ALLOC_SZ(x) ((x) - (x) % BINF_PAGE + BINF_PAGE) // Always allocate exact amount of pages
+#define BINF_ALLOC_SZ(x) (((x) + BINF_PAGE_ALIGN) & 0xFFFFFFFFFFFFF000) // Align to page size
 #define BINF_ALLOC(x) (char *)VirtualAlloc(NULL, (x), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)
 #define BINF_FREE VirtualFree(d, 0, MEM_RELEASE)
 

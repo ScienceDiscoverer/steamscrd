@@ -128,3 +128,47 @@ inline bool64 operator!=(void (*empty_func)(void), const darr &a)
 {
 	return a.s != 0;
 }
+
+/*
+
+class SomeTypeArr : public darr
+{
+public:
+	SomeTypeArr()
+	{ 
+		ts = 128;
+		s = 0;
+		d = (SomeType *)Alloc(ts * sizeof(SomeType));
+		//memset(d, 0, ts * sizeof(SomeType)); // Init complex types (E.G. texts invalidated)
+	}
+	SomeTypeArr(const SomeTypeArr &o) = delete;
+
+	~SomeTypeArr()
+	{
+		// Destroy complex types here
+		DARR_FREE(d);
+	}
+
+	SomeType & operator[](ui64 i) { return d[i]; }
+	const SomeType & operator[](ui64 i) const { return d[i]; }
+
+	SomeTypeArr & operator<<(const SomeType &c)
+	{
+		ui64 ns = s + 1;
+		if(ts < ns)
+		{
+			d = (SomeType *)ReAlloc(d, ns, sizeof(SomeType));
+			//memset(&d[s], 0, (ts - s) * sizeof(SomeType)); // Init complex types (E.G. all new texts invalidated)
+		}
+
+		d[s] = c;
+		s = ns;
+
+		return *this;
+	}
+
+private:
+	SomeType *d;
+};
+
+*/

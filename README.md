@@ -19,6 +19,8 @@ Usage: steamscrd [user_id] [options]
 	Options:
 	[-app=XXXX] --> game ID to download screenshots from
 	[-spage=XX] --> number of page to start download from
+	[-sls=XXX...XXX] --> steamLoginSecure Cookie
+	[-sid=XXX...XXX] --> sessionid Cookie
 ```
 
 ### Direct input
@@ -44,6 +46,31 @@ You can use this number instead.
 ```
 https://store.steampowered.com/app/[>>>292030<<<]/_3/
 ```
+
+## Screenshots from "Adult Only" games
+
+Due to specifics of Steam's age restriction implementation it is not possible to download all restricted screenshots without being logged in. Only screenshots from games that are not marked as "Adult Only" can be downloaded this way.
+
+In order to also download screenshots from "Adult Only" games you will need to extract some cookies from your browser of choice. This can be done in 2 ways. Either by using command line arguments `-sls` and `-sid` or by inputting the cookies directly, when the program detects failure of the no-login method. This cookies are stored only in RAM while the program runs and discarded after you close it.
+
+Also be sure to ensure that your `Adult Only Sexual Content` options are ticked in the Steam's `Store preferences`.
+
+Here is instruction of how to get this cookies from Firefox:
+
+![Firefox Instruction](readme/ff_cookies.png)
+
+Login to Steam -> Go to any `steamcommunity.com` page -> Open developer tools `F12` -> `Storage` -> `Cookies` -> `steamcommunity.com`.
+
+* Double-click and copy `steamLoginSecure` value and paste it into the program, press `Enter`.
+* Repeat the same for `sessionid` cookie.
+
+Here is instruction for Edge:
+
+![Edge Instruction](readme/edge_cookies.png)
+
+Login to Steam -> Go to any `steamcommunity.com` page -> Open developer tools `F12` -> `Application` -> `Cookies` -> `steamcommunity.com`.
+
+Chrome should be pretty similar.
 
 ## Tips
 

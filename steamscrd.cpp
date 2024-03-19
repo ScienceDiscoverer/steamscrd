@@ -408,6 +408,16 @@ void resetErrorOutput()
 	SetConsoleCursorPosition(oh, xy);
 }
 
+void clearErrorOutput()
+{
+	//////////////////////////////////////////////
+	WaitForSingleObject(pause_event, INFINITE); // PAUSE BREAK
+	//////////////////////////////////////////////
+	p|CLS;
+	COORD xy = { 0 , 7 };
+	SetConsoleCursorPosition(oh, xy);
+}
+
 bool pause_on;
 
 #pragma warning( suppress : 4100 )
@@ -586,6 +596,8 @@ cwstr usage = WL(
 	"Options:\n"
 	"[-app=XXXX] --> game ID to download screenshots from\n"
 	"[-spage=XX] --> number of page to start download from\n\n"
+	"[-sls=XXX...XXX] --> steamLoginSecure Cookie\n\n"
+	"[-sid=XXX...XXX] --> sessionid Cookie\n\n"
 	"For more info and to report problems visit:\n"
 	"https://github.com/ScienceDiscoverer/steamscrd");
 
@@ -603,9 +615,13 @@ int wmain(ui64 argc, wchar_t **argv)
 	txt user_id = 127;		// First argument
 	txt game_id = 127;		// -app=4269
 	ui64 start_page = 1;	// -spage=34
+	txt sls_cookie = 1023;	// -sls=773772734...aSAdfdD
+	txt sid_cookie = 127;	// -sid=773...dDsA
 	
 	cwstr app_arg = WL("-app=");
 	cwstr page_arg = WL("-spage=");
+	cwstr sls_arg = WL("-sls=");
+	cwstr sid_arg = WL("-sid=");
 	cwstr unknown_arg = WL("UNKNOWN ARGUMENT");
 	
 	if(argc > 1)
@@ -649,6 +665,26 @@ int wmain(ui64 argc, wchar_t **argv)
 				}
 				
 				start_page = t2i(pn);
+			}
+			else if(txtseq(arg, 0, sls_arg))
+			{
+				if(~arg == sls_arg.s) // Empty argument
+				{
+					argError(sls_arg);
+					return 1;
+				}
+				
+				sls_cookie = wt2u8(txts(arg, sls_arg.s, TEND));;
+			}
+			else if(txtseq(arg, 0, sid_arg))
+			{
+				if(~arg == sid_arg.s) // Empty argument
+				{
+					argError(sid_arg);
+					return 1;
+				}
+				
+				sid_cookie = wt2u8(txts(arg, sid_arg.s, TEND));
 			}
 			else
 			{
@@ -761,7 +797,7 @@ int wmain(ui64 argc, wchar_t **argv)
 		return 1;
 	}
 	
-	resetErrorOutput();
+	clearErrorOutput();
 	
 	// https://steamcommunity.com/id/sciencediscoverer/screenshots/?sort=oldestfirst&browserfilter=myfiles&view=grid&privacy=14&l=english&p=
 	// https://steamcommunity.com/id/sciencediscoverer/screenshots/?appid=404410&sort=oldestfirst&browserfilter=myfiles&view=grid&privacy=14&l=english&p=
@@ -790,7 +826,7 @@ retry_first_grid_load:
 		p|RS|"ERR"|res|DS|"; Failed to load first grid page! Retrying in 2 sec...";
 		txtclr(grid_page);
 		Sleep(2000);
-		resetErrorOutput();
+		clearErrorOutput();
 		goto retry_first_grid_load;
 	}
 	
@@ -823,7 +859,7 @@ retry_first_grid_load:
 		p|R|"Failed to load any screenshots on the first grid page!"|" Retrying in 2 seconds...";
 		txtclr(grid_page);
 		Sleep(2000);
-		resetErrorOutput();
+		clearErrorOutput();
 		goto retry_first_grid_load;
 	}
 	
@@ -870,6 +906,8 @@ retry_first_grid_load:
 	path += t2u16(user_id), path += '\\';
 	
 	CreateDirectoryW(path, NULL);
+	
+	clearErrorOutput(); // Move error output to the middle of the screen
 	
 	// Get individual screenshot pages links from the grid
 	
@@ -1011,8 +1049,9 @@ retry_first_grid_load:
 			
 			// Set time zone cookie to get accurate local screenshot date
 		retry_scr_page_url:
+			txt cookies = tz_offset;
 			curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
-			curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)tz_offset);
+			curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
 			
 			txtclr(scr_page);
 			
@@ -1021,6 +1060,8 @@ retry_first_grid_load:
 			curl_easy_setopt(curl, CURLOPT_URL, (const char *)full_page_link);
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFuncTxt);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &scr_page);
+			
+			bool64 kcookie_tried = false;
 			
 		retry_scr_page:
 			res = curl_easy_perform(curl);
@@ -1051,13 +1092,43 @@ retry_first_grid_load:
 			
 			if(flp == NFND)
 			{
-				p|"Found some "|R|"mature"|" content! Feeding "|V|"The Kinky Cookie"|" to server in 2 sec...";
-				txt allow_kinky_cookie = L("wants_mature_content_item_") + link + L("=1;");
-				curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)allow_kinky_cookie);
-				txtclr(scr_page);
-				Sleep(2000);
-				resetErrorOutput();
-				goto retry_scr_page;
+				if(kcookie_tried)
+				{
+					if(sls_cookie == empty || sid_cookie == empty)
+					{
+						p|"Screenshot from "|R|"Adult Only"|" game detected! Input "|M|"steamLoginSecure"|" cookie below:\n"|RM|EC;
+						r > sls_cookie;
+						resetErrorOutput();
+						p|"Input "|M|"sessionid"|" cookie below:\n";
+						r > sid_cookie;
+						SetConsoleMode(ih, ENABLE_EXTENDED_FLAGS | ENABLE_QUICK_EDIT_MODE | ENABLE_PROCESSED_INPUT);
+						p|DC;
+						resetErrorOutput();
+					}
+					
+					cookies += L(" steamLoginSecure=") + sls_cookie + ';';
+					cookies += L(" sessionid=") + sid_cookie + ';';
+					
+					p|"Found "|R|"Adult Only"|" screenshot! Feeding "|M|"The Login Cookies"|" to server in 2 sec...";
+					
+					curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
+					txtclr(scr_page);
+					Sleep(2000);
+					resetErrorOutput();
+					goto retry_scr_page;
+				}
+				else
+				{
+					p|"Found some "|R|"mature"|" content! Feeding "|M|"The Kinky Cookie"|" to server in 2 sec...";
+					txt allow_kinky_cookie = L(" wants_mature_content_item_") + link + L("=1;");
+					cookies += allow_kinky_cookie;
+					curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
+					txtclr(scr_page);
+					Sleep(2000);
+					resetErrorOutput();
+					kcookie_tried = true;
+					goto retry_scr_page;
+				}
 			}
 			
 			ui64 fep = txtf(scr_page, flp, L("/?")); // Full link end position
