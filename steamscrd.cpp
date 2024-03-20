@@ -19,6 +19,7 @@
 #define INIT_SCR_SIZE 8388608
 
 ui64 total_scrs;
+ui64 skipped_scrs;
 ui64 max_page;
 ui64 counter;
 ui64 spd_counter;
@@ -915,6 +916,7 @@ retry_first_grid_load:
 	ui64 t_beg, t_end; // Timers for measuring screenshot saving speed
 	binf scrshot = INIT_SCR_SIZE;
 	ui64 tot_down = 0; // Total amount of screenshots actually downloaded
+	bool64 skip_adult_only = false;
 	
 	for(ui64 pn = start_page; pn <= max_page; ++pn) // Current screenshot grid page number
 	{
@@ -1061,7 +1063,8 @@ retry_first_grid_load:
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFuncTxt);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &scr_page);
 			
-			bool64 kcookie_tried = false;
+			bool64 kcookie_tried = false; // Kinky Cookie strategy tried
+			bool64 lcookie_tried = false; // Login Cookies strategy tried
 			
 		retry_scr_page:
 			res = curl_easy_perform(curl);
@@ -1094,9 +1097,54 @@ retry_first_grid_load:
 			{
 				if(kcookie_tried)
 				{
+					if(skip_adult_only)
+					{
+						++skipped_scrs;
+						resetErrorOutput();
+						t_end = GetTickCount64();
+						total_time += t_end - t_beg;
+						updateGUI(pn, L("SKIPPED"));
+						continue;
+					}
+					
+					if(lcookie_tried)
+					{
+						p|"Failed to fetch "|R|"Adult Only"|" screenshot!"|N;
+						p|"Type "|B|"retry"|", "|Y|"skip"|" or "|R|"skipall"|":"|N|RM|EC;
+						txt choice = 31;
+						r > choice;
+						resetErrorOutput();
+						SetConsoleMode(ih, ENABLE_EXTENDED_FLAGS | ENABLE_QUICK_EDIT_MODE | ENABLE_PROCESSED_INPUT);
+						p|DC;
+						
+						if(choice == L("retry"))
+						{
+							++skipped_scrs;
+							goto retry_scr_page;
+						}
+						else if(choice == L("skip"))
+						{
+							++skipped_scrs;
+							t_end = GetTickCount64();
+							total_time += t_end - t_beg;
+							updateGUI(pn, L("SKIPPED"));
+							continue;
+						}
+						else if(choice == L("skipall"))
+						{
+							++skipped_scrs;
+							skip_adult_only = true;
+							t_end = GetTickCount64();
+							total_time += t_end - t_beg;
+							updateGUI(pn, L("SKIPPED"));
+							continue;
+						}
+					}
+					
 					if(sls_cookie == empty || sid_cookie == empty)
 					{
-						p|"Screenshot from "|R|"Adult Only"|" game detected! Input "|M|"steamLoginSecure"|" cookie below:\n"|RM|EC;
+						p|"Screenshot from "|R|"Adult Only"|" game detected!"|N;
+						p|"Input "|M|"steamLoginSecure"|" cookie below, or press "|C|"ENTER"|" to skip:"|N|RM|EC;
 						r > sls_cookie;
 						resetErrorOutput();
 						p|"Input "|M|"sessionid"|" cookie below:\n";
@@ -1115,6 +1163,7 @@ retry_first_grid_load:
 					txtclr(scr_page);
 					Sleep(2000);
 					resetErrorOutput();
+					lcookie_tried = true;
 					goto retry_scr_page;
 				}
 				else
@@ -1137,33 +1186,38 @@ retry_first_grid_load:
 			//<a href=L("https://steamcommunity.com/app/221260/screenshots/")>Little Inferno</a>
 			//<div class="screenshotAppName">AM2R</div> ---> Removed from Steam Store
 			ui64 anp = txtf(scr_page, fep, L("screenshotAppName")); // screenshotAppName position
-			ui64 ane = txtf(scr_page, anp, L("</div>")); // screenshotAppName end position
 			
-			txt scr_app_name = txtsp(scr_page, anp, ane);
-			txt app_id = L("REMOVED");
-			txt name = 127;
+			txt scr_app_name = 511;
+			txt app_id = L("UNKNOWN");
+			txt name = L("_UNKNOWN_");
 			
-			ui64 idp = txtf(scr_app_name, 0, L("/app/")); // Steam Application ID position
-			if(idp != NFND)
+			if(anp != NFND)
 			{
-				idp += 5;
-				ui64 iep = txtf(scr_app_name, idp, '/') - 1; // Steam Application ID end position
-				app_id = txtsp(scr_app_name, idp, iep);
-				ui64 nmp = txtf(scr_app_name, iep, '>') + 1; // Name position
-				ui64 nep = txtf(scr_app_name, nmp, '<') - 1; // Name end position
-				name = txtsp(scr_app_name, nmp, nep);
+				ui64 ane = txtf(scr_page, anp, L("</div>")); // screenshotAppName end position
+				scr_app_name = txtsp(scr_page, anp, ane);
+				
+				ui64 idp = txtf(scr_app_name, 0, L("/app/")); // Steam Application ID position
+				if(idp != NFND)
+				{
+					idp += 5;
+					ui64 iep = txtf(scr_app_name, idp, '/') - 1; // Steam Application ID end position
+					app_id = txtsp(scr_app_name, idp, iep);
+					ui64 nmp = txtf(scr_app_name, iep, '>') + 1; // Name position
+					ui64 nep = txtf(scr_app_name, nmp, '<') - 1; // Name end position
+					name = txtsp(scr_app_name, nmp, nep);
+				}
+				else
+				{
+					ui64 nmp = txtf(scr_app_name, 0, '>') + 1; // Name position
+					ui64 nep = txtf(scr_app_name, nmp, '<') - 1; // Name end position
+					name = txtsp(scr_app_name, nmp, nep);
+				}
+				
+				cleanName(name);
 			}
-			else
-			{
-				ui64 nmp = txtf(scr_app_name, 0, '>') + 1; // Name position
-				ui64 nep = txtf(scr_app_name, nmp, '<') - 1; // Name end position
-				name = txtsp(scr_app_name, nmp, nep);
-			}
-			
-			cleanName(name);
 			
 			//<div class="detailsStatRight">22 Jan, 2013 @ 3:58am</div>
-			ui64 dsp0 = txtf(scr_page, ane, L("detailsStatRight")) + 16; // Skip first detailsStatRight
+			ui64 dsp0 = txtf(scr_page, fep, L("detailsStatRight")) + 16; // Skip first detailsStatRight
 			ui64 dsp = txtf(scr_page, dsp0, L("detailsStatRight")) + 16; // Skip second detailsStatRight
 			ui64 dtp = txtf(scr_page, dsp, '>') + 1; // Datetime position
 			ui64 dep = txtf(scr_page, dtp, '<') - 1; // Datetime end position
@@ -1269,6 +1323,11 @@ retry_first_grid_load:
 	else
 	{
 		p|G|tot_down|GD|" from "|G|total_scrs|GD|" screenshots where downloaded successfully!";
+	}
+	
+	if(skipped_scrs != 0)
+	{
+		p|N|Y|skipped_scrs|" screenshots where "|R|"SKIPPED"|" by user...";
 	}
 	
 	p|N|"Press "|B|"SPACE"|" to exit...";
