@@ -50,6 +50,11 @@ struct ConBufWndSz
 	ui32 h;
 };
 
+struct DefConAttr
+{
+	WORD a;
+};
+
 inline PadInfo SP(ui64 len)
 {
 	PadInfo pi; // 2 MS bits siginfy type of pad setting
@@ -140,4 +145,11 @@ inline ConBufWndSz SCBW(ui64 w, ui64 h)
 	cbws.w = (ui32)w;
 	cbws.h = (ui32)h;
 	return cbws;
+}
+
+inline DefConAttr SDCA(WORD attr)
+{
+	DefConAttr dca;
+	dca.a = attr;
+	return dca;
 }

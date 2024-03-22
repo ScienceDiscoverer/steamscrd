@@ -586,7 +586,7 @@ void conInit()
 		return;
 	}
 	
-	p|SCBW(79,22);
+	p|SCBW(79,22)|SDCA(BLACK_BG_WHITE_FG)|CLS;
 	SetConsoleTitle(L"Steam Screenshot Downloader");
 	SetConsoleCtrlHandler(conBreakHandler, TRUE);
 	console_initialised = true;
@@ -1332,6 +1332,6 @@ retry_first_grid_load:
 	
 	p|N|"Press "|B|"SPACE"|" to exit...";
 	pause_thread();
-	p|CLS|RCON;
+	p|RCON|CLS;
 	return 0;
 }

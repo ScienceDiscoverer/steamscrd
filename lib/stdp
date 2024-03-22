@@ -16,6 +16,8 @@
 #define TABLE_RIGHT			0x1
 #define TABLE_CENTER		0x2
 
+#define BLACK_BG_WHITE_FG	0xF
+
 #define STD_PRINTER
 
 struct StdTableColPad
@@ -69,6 +71,7 @@ public:
 	StdPrinter & operator|(ConBufSz bs);
 	StdPrinter & operator|(ConWndSz ws);
 	StdPrinter & operator|(ConBufWndSz bws);
+	StdPrinter & operator|(DefConAttr dca);
 	
 	friend StdPrinter & R(StdPrinter &stdp);	// Red for next print only
 	friend StdPrinter & G(StdPrinter &stdp);	// Green for n.p.o.
@@ -82,7 +85,7 @@ public:
 	friend StdPrinter & YD(StdPrinter &stdp);	// Dark Yellow for n.p.o.
 	friend StdPrinter & MD(StdPrinter &stdp);	// Dark Magenta for n.p.o.
 	friend StdPrinter & CD(StdPrinter &stdp);	// Dark Cayan for n.p.o.
-	friend StdPrinter & DS(StdPrinter &stdp);	// Set Default color for all prints
+	friend StdPrinter & DS(StdPrinter &stdp);	// Set Default colour for all prints
 	friend StdPrinter & RS(StdPrinter &stdp);	// Set Red for a.p.
 	friend StdPrinter & GS(StdPrinter &stdp);	// Set Green for a.p.
 	friend StdPrinter & BS(StdPrinter &stdp);	// Set Blue for a.p.
@@ -136,6 +139,8 @@ public:
 	friend ConWndSz SCW(ui64 w, ui64 h);		// Set console window size
 	friend ConBufWndSz SCBW(ui64 w, ui64 h);	// Set console buffer and window size
 	
+	friend DefConAttr SDCA(WORD attr);			// Set default console attributes (colours)
+	
 private:
 	static WORD GetDefConParams();
 	
@@ -146,12 +151,12 @@ private:
 	void PrintCenterPad(ui64 padl, bool right);
 	void ResetSinglePad();
 	void PrintToTable(const txt &cell);
-	void RestoreColor();
+	void RestoreColour();
 	
 private:
 	static DWORD bw;							// Bytes Written
 	static wchar_t defpad;						// Default padding character
-	static WORD defc;							// Default Color
+	static WORD defc;							// Default Colour
 	static CONSOLE_CURSOR_INFO con;				// Cursor On
 	static CONSOLE_CURSOR_INFO coff;			// Cursor Off
 	static CONSOLE_CURSOR_INFO cdef;			// Cursor Default previous value
@@ -174,10 +179,10 @@ private:
 	ui64 trow;				// Current table row
 	bool tmode;				// Table mode is on
 	ui8 tcelal;				// Current table cell alignment
-	ui16 txtattr;			// Current text attributes (color)
+	ui16 txtattr;			// Current text attributes (colour)
 	ui32 defocp;			// Default output code page
 	ui32 deficp;			// Default input code page
-	ui32 res_col;			// Restore default color after printing
+	ui32 res_col;			// Restore default colour after printing
 };
 
 extern StdPrinter p;
@@ -240,7 +245,7 @@ inline StdPrinter & StdPrinter::operator|(ui64 ui)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -272,7 +277,7 @@ inline StdPrinter & StdPrinter::operator|(ui32 ui)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -304,7 +309,7 @@ inline StdPrinter & StdPrinter::operator|(uli32 uli)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -337,7 +342,7 @@ inline StdPrinter & StdPrinter::operator|(ui16 ui)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -370,7 +375,7 @@ inline StdPrinter & StdPrinter::operator|(i64 i)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -402,7 +407,7 @@ inline StdPrinter & StdPrinter::operator|(i32 i)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -434,7 +439,7 @@ inline StdPrinter & StdPrinter::operator|(li32 li)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -466,7 +471,7 @@ inline StdPrinter & StdPrinter::operator|(i16 i)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -500,7 +505,7 @@ inline StdPrinter & StdPrinter::operator|(wchar_t wc)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -530,7 +535,7 @@ inline StdPrinter & StdPrinter::operator|(char c)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -570,7 +575,7 @@ inline StdPrinter & StdPrinter::operator|(bool b)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
  /* TODO
@@ -623,21 +628,21 @@ inline StdPrinter & StdPrinter::operator|(const void *vp)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
 inline StdPrinter & StdPrinter::operator|(const char *ccp)
 {	
 	*this|cstr({ ccp, strl(ccp) });
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
 inline StdPrinter & StdPrinter::operator|(const wchar_t *cwcp)
 {
 	*this|cwstr({ cwcp, strl(cwcp) });
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -667,7 +672,7 @@ inline StdPrinter & StdPrinter::operator|(cstr cs)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -702,7 +707,7 @@ inline StdPrinter & StdPrinter::operator|(cwstr cs)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -732,7 +737,7 @@ inline StdPrinter & StdPrinter::operator|(const txt &t)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -766,7 +771,7 @@ inline StdPrinter & StdPrinter::operator|(const wtxt &wt)
 		PrintCenterPad(lr_pad + padlen % 2, true);
 	}
 	
-	RestoreColor();
+	RestoreColour();
 	return *this;
 }
 
@@ -895,6 +900,14 @@ inline StdPrinter & StdPrinter::operator|(ConBufWndSz bws)
 		SetConsoleWindowInfo(oh, TRUE, &wnd_pos);
 	}
 	
+	return *this;
+}
+
+inline StdPrinter & StdPrinter::operator|(DefConAttr dca)
+{
+	defc = dca.a;
+	txtattr = dca.a;
+	SetConsoleTextAttribute(oh, dca.a);
 	return *this;
 }
 
@@ -1055,7 +1068,7 @@ inline void StdPrinter::ResetSinglePad()
 	singpad = false;
 }
 
-inline void StdPrinter::RestoreColor()
+inline void StdPrinter::RestoreColour()
 {
 	if(res_col)
 	{
