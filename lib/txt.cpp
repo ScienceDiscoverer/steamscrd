@@ -1637,6 +1637,12 @@ txt & b2b(ui8 b, txt &res)
 
 ui64 t2i(const txt &t) // Check out ql.cpp for most minimal and fastest implementation of this
 {
+	if(t.s == 0)
+	{
+		t.ExceptNum(EXCEPTION_T2I_NON_NUMBER);
+		return 0;
+	}
+	
 	ui64 negative = 0;
 	
 	if(t.t[0] == 0x2D)
@@ -1686,6 +1692,12 @@ ui64 t2i(const txt &t) // Check out ql.cpp for most minimal and fastest implemen
 
 ui64 h2i(const txt &t)
 {
+	if(t.s == 0)
+	{
+		t.ExceptNum(EXCEPTION_T2I_NON_NUMBER);
+		return 0;
+	}
+	
 	if(t.s > 16)
 	{
 		t.ExceptNum(EXCEPTION_H2I_OVERFLOW);

@@ -41,8 +41,20 @@ ui64 NOTHROW PARAMNOUSE writeFuncImg(char *ptr, ui64 size, ui64 nmemb, void *use
 
 txt formatDateTime(const txt &dt, SYSTEMTIME *md)
 {
-	ui64 daye = txtf(dt, 0, ' ') - 1; // Day end position
-	txt day = txtsp(dt, 0, daye);
+	txt day, month;
+	if(dt[0] >= '0' && dt[0] <= '9') // 21 Jan, 2013 @ 12:44pm
+	{
+		ui64 daye = txtf(dt, 0, ' ') - 1; // Day end position
+		day = txtsp(dt, 0, daye);
+		month = txts(dt, daye+2, 3);
+	}
+	else // Jan 21, 2013 @ 6:44am
+	{
+		ui64 mone = txtf(dt, 0, ' ') - 1; // Month end position
+		month = txtsp(dt, 0, mone);
+		day = txtsp(dt, mone+2, txtf(dt, mone, ',')-1);
+	}
+	
 	if(~day == 1)
 	{
 		day = '0' + day;
@@ -50,8 +62,6 @@ txt formatDateTime(const txt &dt, SYSTEMTIME *md)
 	
 	md->wDay = (WORD)t2i(day);
 	md->wDayOfWeek = 0;
-	
-	txt month = txts(dt, daye+2, 3);
 	
 	if(month == L("Jan"))
 	{
@@ -105,9 +115,10 @@ txt formatDateTime(const txt &dt, SYSTEMTIME *md)
 	md->wMonth = (WORD)t2i(month);
 	
 	txt year;
-	if(dt[daye+5] == ',')
+	ui64 comma = txtf(dt, 0, ',');
+	if(comma != NFND)
 	{
-		year = txts(dt, daye+7, 4);
+		year = txts(dt, comma+2, 4);
 		md->wYear = (WORD)t2i(year);
 	}
 	else
@@ -118,12 +129,12 @@ txt formatDateTime(const txt &dt, SYSTEMTIME *md)
 		md->wYear = st.wYear;
 	}
 	
-	//20 Jan, 2013 @ 6:29am
-	//2 Jul @ 11:38am
-	//5 Oct, 2022 @ 8:01pm
+	// 20 Jan, 2013 @ 6:29am
+	// 2 Jul @ 11:38am
+	// 5 Oct, 2022 @ 8:01pm
 	
 	txt hour, minute;
-	ui64 dogp = txtf(dt, daye, '@'); // Doge position
+	ui64 dogp = txtf(dt, 0, '@'); // Doge position
 	if(dt[dogp+3] == ':')
 	{
 		char a_p = dt[dogp+6]; // AM or PM?!
