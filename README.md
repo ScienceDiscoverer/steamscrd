@@ -72,6 +72,10 @@ Login to Steam -> Go to any `steamcommunity.com` page -> Open developer tools `F
 
 Chrome should be pretty similar.
 
+## Private and Friends Only screenshots
+
+Just enter the `steamLoginSecure` and `sessionid` cookies as described above. This will allow you to additionally download "Friends Only" and "Private" (Hidden) screenshots from your library without the need to make them all public.
+
 ## Tips
 
 * You can view screenshot comments by enabling `Comments` column in the Explorer. Switch to `View -> Details`, right-click on any column title and press `More...`, tick `Comments`, press `OK`. You can also use image viewr like [IrfanView](https://www.irfanview.com/main_download_engl.htm) to view comment while actually enjoying the image itself. Use [this instructions](https://irfanview-forum.de/forum/program/feature-requests/11035-) to enable the comment.

@@ -929,6 +929,16 @@ retry_first_grid_load:
 	ui64 tot_down = 0; // Total amount of screenshots actually downloaded
 	bool64 skip_adult_only = false;
 	
+	// Set up base cookies including time zone cookie to get accurate local screenshot date
+	txt cookies = tz_offset;
+	if(sls_cookie != empty && sid_cookie != empty)
+	{
+		cookies += L(" steamLoginSecure=") + sls_cookie + ';';
+		cookies += L(" sessionid=") + sid_cookie + ';';
+	}
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
+	curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
+	
 	for(ui64 pn = start_page; pn <= max_page; ++pn) // Current screenshot grid page number
 	{
 		txtclr(grid_page);
@@ -1060,12 +1070,8 @@ retry_first_grid_load:
 			
 			// Visit screenshot individual page to get some info and direct link
 			
-			// Set time zone cookie to get accurate local screenshot date
 		retry_scr_page_url:
-			txt cookies = tz_offset;
-			curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
 			curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
-			
 			txtclr(scr_page);
 			
 			full_page_link = L("https://steamcommunity.com/sharedfiles/filedetails/?id=") + link;
@@ -1163,10 +1169,10 @@ retry_first_grid_load:
 						SetConsoleMode(ih, ENABLE_EXTENDED_FLAGS | ENABLE_QUICK_EDIT_MODE | ENABLE_PROCESSED_INPUT);
 						p|DC;
 						resetErrorOutput();
+						
+						cookies += L(" steamLoginSecure=") + sls_cookie + ';';
+						cookies += L(" sessionid=") + sid_cookie + ';';
 					}
-					
-					cookies += L(" steamLoginSecure=") + sls_cookie + ';';
-					cookies += L(" sessionid=") + sid_cookie + ';';
 					
 					p|"Found "|R|"Adult Only"|" screenshot! Feeding "|M|"The Login Cookies"|" to server in 2 sec...";
 					
@@ -1181,8 +1187,8 @@ retry_first_grid_load:
 				{
 					p|"Found some "|R|"mature"|" content! Feeding "|M|"The Kinky Cookie"|" to server in 2 sec...";
 					txt allow_kinky_cookie = L(" wants_mature_content_item_") + link + L("=1;");
-					cookies += allow_kinky_cookie;
-					curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
+					txt tmp_cookie = cookies + allow_kinky_cookie;
+					curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)tmp_cookie);
 					txtclr(scr_page);
 					Sleep(2000);
 					resetErrorOutput();
