@@ -822,6 +822,17 @@ int wmain(ui64 argc, wchar_t **argv)
 	}
 	burl += L("sort=oldestfirst&browserfilter=myfiles&view=grid&privacy=14&l=english&p=");
 	
+	// Set up base cookies including time zone cookie to get accurate local screenshot date
+	txt cookies = L("timezoneOffset=") + getTzOffset() + L(",0;");
+	// From [shared_global.js]: document.cookie = "timezoneOffset=" + tzOffset + "," + isDST + ";
+	if(sls_cookie != empty && sid_cookie != empty)
+	{
+		cookies += L(" steamLoginSecure=") + sls_cookie + ';';
+		cookies += L(" sessionid=") + sid_cookie + ';';
+	}
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
+	curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
+	
 	// Get total amount of screenshots and total number of grid pages
 	bool64 profile_url_tried = false;
 	txt grid_page = 262143, scr_page = 262143, full_page_link = 1024;
@@ -906,9 +917,6 @@ retry_first_grid_load:
 		max_page = t2i(max_page_txt);
 	}
 	
-	// From [shared_global.js]: document.cookie = "timezoneOffset=" + tzOffset + "," + isDST + ";
-	txt tz_offset = L("timezoneOffset=") + getTzOffset() + L(",0;");
-	
 	// Set up screenshots folder
 	wtxt path = MAX_PATH;
 	txtssz(path, GetModuleFileNameW(NULL, path, MAX_PATH));
@@ -928,16 +936,6 @@ retry_first_grid_load:
 	binf scrshot = INIT_SCR_SIZE;
 	ui64 tot_down = 0; // Total amount of screenshots actually downloaded
 	bool64 skip_adult_only = false;
-	
-	// Set up base cookies including time zone cookie to get accurate local screenshot date
-	txt cookies = tz_offset;
-	if(sls_cookie != empty && sid_cookie != empty)
-	{
-		cookies += L(" steamLoginSecure=") + sls_cookie + ';';
-		cookies += L(" sessionid=") + sid_cookie + ';';
-	}
-	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
-	curl_easy_setopt(curl, CURLOPT_COOKIE, (const char *)cookies);
 	
 	for(ui64 pn = start_page; pn <= max_page; ++pn) // Current screenshot grid page number
 	{
